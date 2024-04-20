@@ -1,0 +1,55 @@
+project.repositories {
+    mavenCentral()
+    mavenLocal()
+    maven { url "https://www.jitpack.io" }
+}
+
+project.plugins.apply("java")
+project.plugins.apply("idea")
+project.plugins.apply("maven-publish")
+
+// src - java sources
+// gen - generated java sources
+// res - resources (e.g. assets)
+project.sourceSets.main.java.srcDirs = [
+        "src", "gen"
+]
+project.sourceSets.main.resources.srcDirs = [
+        "res"
+]
+
+project.tasks.compileJava { JavaCompile task ->
+    task.options.encoding = "UTF-8"
+    task.options.compilerArgs += "-Xlint:none"
+}
+
+project.dependencies {
+    implementation "com.github.Anuken.Arc:arc-core:v146"
+}
+
+project.tasks.withType(JavaCompile) { JavaCompile task ->
+    /*task.targetCompatibility = JavaVersion.VERSION_20
+    task.sourceCompatibility = JavaVersion.VERSION_20*/
+}
+
+project.tasks.create("copyJar") { Task task ->
+    task.dependsOn project.tasks.jar
+
+    task.doLast {
+        project.copy { CopySpec spec ->
+            spec.from project.tasks.jar.archiveFile.get()
+            spec.into project.file("output")
+        }
+    }
+}
+
+project.tasks.jar { Jar jar ->
+    jar.duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    jar.from {
+        project.configurations.runtimeClasspath.collect { File file ->
+            file.isDirectory() ? file : zipTree(file)
+        }
+    }
+
+    jar.manifest.attributes("Main-Class": "com.nekit508.updater.Updater")
+}
